@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Skill Tracker</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 30px 15px;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(135deg, #06121f, #123b5c);
+  color: white;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 750px;
+  margin: auto;
+  background: #10283d;
+  padding: 25px;
+  border-radius: 18px;
+  box-shadow: 0 8px 25px #0005;
+}
+
+h1 {
+  text-align: center;
+  color: #00e5ff;
+}
+
+.subtitle {
+  text-align: center;
+  color: #b9c9d8;
+}
+
+.input-area {
+  display: flex;
+  gap: 10px;
+  margin: 25px 0;
+}
+
+input {
+  flex: 1;
+  min-width: 0;
+  padding: 13px;
+  border: none;
+  border-radius: 8px;
+  outline: none;
+}
+
+button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.add-btn {
+  background: #00e5ff;
+  color: #06121f;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  text-align: center;
+}
+
+.stat {
+  background: #183b55;
+  padding: 15px 5px;
+  border-radius: 10px;
+}
+
+.stat h2 {
+  color: #00e5ff;
+  margin: 5px;
+}
+
+.progress-bg {
+  background: #29465b;
+  height: 12px;
+  border-radius: 20px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+#progress {
+  width: 0%;
+  height: 100%;
+  background: #00e5ff;
+  transition: width .3s;
+}
+
+.course {
+  background: #183b55;
+  margin-top: 12px;
+  padding: 15px;
+  border-radius: 10px;
+}
+
+.course-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.course-name {
+  font-weight: bold;
+  overflow-wrap: anywhere;
+}
+
+.status {
+  color: #00e5ff;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.attend {
+  background: #f0c75e;
+}
+
+.complete {
+  background: #00d69a;
+}
+
+.delete {
+  background: #ff647c;
+  color: white;
+}
+
+button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+#empty {
+  text-align: center;
+  color: #b9c9d8;
+  margin-top: 25px;
+}
+
+@media (max-width: 480px) {
+  .input-area {
+    flex-direction: column;
+  }
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+  <h1>Student Skill Tracker</h1>
+  <p class="subtitle">Track your courses and certificates</p>
+
+  <div class="input-area">
+    <input id="courseInput" type="text"
+      placeholder="Enter course name">
+    <button class="add-btn" onclick="addCourse()">
+      Add Course
+    </button>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <h2 id="total">0</h2>
+      <p>Total</p>
+    </div>
+
+    <div class="stat">
+      <h2 id="attendingCount">0</h2>
+      <p>Attending</p>
+    </div>
+
+    <div class="stat">
+      <h2 id="done">0</h2>
+      <p>Completed</p>
+    </div>
+  </div>
+
+  <h3>Overall Progress: <span id="percentage">0%</span></h3>
+  <div class="progress-bg">
+    <div id="progress"></div>
+  </div>
+
+  <h3>My Courses</h3>
+  <div id="courseList"></div>
+  <p id="empty">No courses added yet.</p>
+
+</div>
+
+<script>
+let courses = [];
+
+try {
+  const saved = JSON.parse(
+    localStorage.getItem("studentCourses") || "[]"
+  );
+
+  courses = saved.map(course => ({
+    name: course.name,
+    status: course.status ||
+      (course.completed ? "Completed" : "Not Started")
+  }));
+} catch {
+  courses = [];
+}
+
+function saveCourses() {
+  localStorage.setItem(
+    "studentCourses",
+    JSON.stringify(courses)
+  );
+}
+
+function addCourse() {
+  const input = document.getElementById("courseInput");
+  const name = input.value.trim();
+
+  if (!name) {
+    alert("Please enter a course name!");
+    return;
+  }
+
+  const exists = courses.some(
+    course => course.name.toLowerCase() === name.toLowerCase()
+  );
+
+  if (exists) {
+    alert("This course is already added!");
+    return;
+  }
+
+  courses.push({
+    name: name,
+    status: "Not Started"
+  });
+
+  input.value = "";
+  saveCourses();
+  renderCourses();
+}
+
+function attendCourse(index) {
+  if (courses[index].status !== "Not Started") return;
+
+  courses[index].status = "Attending";
+  saveCourses();
+  renderCourses();
+}
+
+function completeCourse(index) {
+  if (courses[index].status !== "Attending") return;
+
+  courses[index].status = "Completed";
+  saveCourses();
+  renderCourses();
+}
+
+function deleteCourse(index) {
+  courses.splice(index, 1);
+  saveCourses();
+  renderCourses();
+}
+
+function renderCourses() {
+  const list = document.getElementById("courseList");
+  const empty = document.getElementById("empty");
+
+  list.replaceChildren();
+  empty.style.display = courses.length ? "none" : "block";
+
+  courses.forEach((course, index) => {
+    const card = document.createElement("div");
+    card.className = "course";
+
+    const top = document.createElement("div");
+    top.className = "course-top";
+
+    const name = document.createElement("span");
+    name.className = "course-name";
+    name.textContent = course.name;
+
+    const status = document.createElement("span");
+    status.className = "status";
+    status.textContent = course.status;
+
+    top.append(name, status);
+
+    const actions = document.createElement("div");
+    actions.className = "actions";
+
+    const attend = document.createElement("button");
+    attend.className = "attend";
+    attend.textContent = "Attend";
+    attend.disabled = course.status !== "Not Started";
+    attend.onclick = () => attendCourse(index);
+
+    const complete = document.createElement("button");
+    complete.className = "complete";
+    complete.textContent = "Complete";
+    complete.disabled = course.status !== "Attending";
+    complete.onclick = () => completeCourse(index);
+
+    const remove = document.createElement("button");
+    remove.className = "delete";
+    remove.textContent = "Delete";
+    remove.onclick = () => deleteCourse(index);
+
+    actions.append(attend, complete, remove);
+    card.append(top, actions);
+    list.appendChild(card);
+  });
+
+  const total = courses.length;
+  const attending = courses.filter(
+    c => c.status === "Attending"
+  ).length;
+  const completed = courses.filter(
+    c => c.status === "Completed"
+  ).length;
+
+  const percentage = total
+    ? Math.round((completed / total) * 100)
+    : 0;
+
+  document.getElementById("total").textContent = total;
+  document.getElementById("attendingCount").textContent = attending;
+  document.getElementById("done").textContent = completed;
+  document.getElementById("percentage").textContent =
+    percentage + "%";
+  document.getElementById("progress").style.width =
+    percentage + "%";
+}
+
+document.getElementById("courseInput").addEventListener(
+  "keydown",
+  event => {
+    if (event.key === "Enter") addCourse();
+  }
+);
+
+renderCourses();
+</script>
+</body>
+</html>
